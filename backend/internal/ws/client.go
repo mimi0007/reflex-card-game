@@ -15,10 +15,12 @@ const (
 )
 
 type Client struct {
-	ID   string
-	hub  *Hub
-	conn *websocket.Conn
-	Send chan []byte
+	ID       string
+	RoomID   string
+	PlayerID string // "p1" or "p2", set after room join
+	hub      *Hub
+	conn     *websocket.Conn
+	Send     chan []byte
 }
 
 func NewClient(id string, hub *Hub, conn *websocket.Conn) *Client {
