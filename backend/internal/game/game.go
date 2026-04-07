@@ -24,27 +24,29 @@ type Card struct {
 	Suit string
 }
 
-type ClickEvent struct {
-	PlayerID string
-}
-
 type Game struct {
-	mu       sync.Mutex
-	deck     []Card
-	cardIdx  int
-	state    State
-	players  [2]*ws.Client
-	interval time.Duration
-	clicks   chan ClickEvent
-	done     chan struct{}
+	mu            sync.Mutex
+	clickMu       sync.Mutex
+	deck          []Card
+	cardIdx       int
+	state         State
+	players       [2]*ws.Client
+	interval      time.Duration
+	done          chan struct{}
+	round         int
+	scores        map[string]int
+	roundResolved bool
+	currentCard   Card
+	cardRevealed  bool
 }
 
 func New(players [2]*ws.Client, interval time.Duration) *Game {
 	g := &Game{
 		players:  players,
 		interval: interval,
-		clicks:   make(chan ClickEvent, 4),
 		done:     make(chan struct{}),
+		round:    1,
+		scores:   map[string]int{"p1": 0, "p2": 0},
 	}
 	g.deck = buildDeck()
 	shuffle(g.deck)
@@ -74,10 +76,7 @@ func (g *Game) HandleMessage(playerID string, data []byte) {
 		return
 	}
 	if msg.Type == "click" {
-		select {
-		case g.clicks <- ClickEvent{PlayerID: playerID}:
-		default:
-		}
+		g.HandleClick(playerID)
 	}
 }
 
@@ -93,26 +92,31 @@ func (g *Game) run() {
 			if !g.revealNext() {
 				return
 			}
-		case ev := <-g.clicks:
-			_ = ev
 		}
 	}
 }
 
 func (g *Game) revealNext() bool {
 	g.mu.Lock()
+	if g.state != StatePlaying {
+		g.mu.Unlock()
+		return true
+	}
 	if g.cardIdx >= len(g.deck) {
 		g.state = StateGameOver
+		scores := map[string]int{"p1": g.scores["p1"], "p2": g.scores["p2"]}
 		g.mu.Unlock()
 		g.broadcast(map[string]any{
 			"type":   "game_over",
 			"winner": "",
-			"scores": map[string]int{"p1": 0, "p2": 0},
+			"scores": scores,
 		})
 		return false
 	}
 	card := g.deck[g.cardIdx]
 	g.cardIdx++
+	g.currentCard = card
+	g.cardRevealed = true
 	g.mu.Unlock()
 
 	g.broadcast(map[string]any{
