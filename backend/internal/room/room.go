@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
+	"github.com/mimi0007/reflex-card-game/backend/internal/game"
 	"github.com/mimi0007/reflex-card-game/backend/internal/ws"
 )
 
@@ -30,10 +32,12 @@ func sendJSON(client *ws.Client, v any) {
 }
 
 type Room struct {
-	ID      string
-	players [2]*ws.Client
-	mu      sync.Mutex
-	count   int
+	ID       string
+	players  [2]*ws.Client
+	mu       sync.Mutex
+	count    int
+	game     *game.Game
+	interval time.Duration
 }
 
 func (r *Room) Join(client *ws.Client) (int, error) {
@@ -56,18 +60,38 @@ func (r *Room) Join(client *ws.Client) (int, error) {
 	} else {
 		sendJSON(r.players[0], map[string]any{"type": "game_start", "player_id": "p1"})
 		sendJSON(r.players[1], map[string]any{"type": "game_start", "player_id": "p2"})
+
+		r.game = game.New(r.players, r.interval)
+
+		r.players[0].SetOnMessage(func(data []byte) { r.game.HandleMessage("p1", data) })
+		r.players[1].SetOnMessage(func(data []byte) { r.game.HandleMessage("p2", data) })
+
+		r.game.Start()
 	}
 
 	return idx, nil
 }
 
-type Manager struct {
-	mu    sync.Mutex
-	rooms map[string]*Room
+func (r *Room) StopGame() {
+	r.mu.Lock()
+	g := r.game
+	r.mu.Unlock()
+	if g != nil {
+		g.Stop()
+	}
 }
 
-func NewManager() *Manager {
-	return &Manager{rooms: make(map[string]*Room)}
+type Manager struct {
+	mu       sync.Mutex
+	rooms    map[string]*Room
+	interval time.Duration
+}
+
+func NewManager(interval time.Duration) *Manager {
+	return &Manager{
+		rooms:    make(map[string]*Room),
+		interval: interval,
+	}
 }
 
 func (m *Manager) GetOrCreate(roomID string) *Room {
@@ -82,7 +106,7 @@ func (m *Manager) GetOrCreate(roomID string) *Room {
 		return r
 	}
 
-	r := &Room{ID: roomID}
+	r := &Room{ID: roomID, interval: m.interval}
 	m.rooms[roomID] = r
 	return r
 }
@@ -91,7 +115,7 @@ func (m *Manager) createLocked() *Room {
 	for {
 		id := newRoomID()
 		if _, exists := m.rooms[id]; !exists {
-			r := &Room{ID: id}
+			r := &Room{ID: id, interval: m.interval}
 			m.rooms[id] = r
 			return r
 		}
