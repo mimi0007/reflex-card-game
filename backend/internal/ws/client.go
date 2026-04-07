@@ -15,12 +15,13 @@ const (
 )
 
 type Client struct {
-	ID       string
-	RoomID   string
-	PlayerID string // "p1" or "p2", set after room join
-	hub      *Hub
-	conn     *websocket.Conn
-	Send     chan []byte
+	ID        string
+	RoomID    string
+	PlayerID  string
+	hub       *Hub
+	conn      *websocket.Conn
+	Send      chan []byte
+	onMessage func([]byte)
 }
 
 func NewClient(id string, hub *Hub, conn *websocket.Conn) *Client {
@@ -30,6 +31,10 @@ func NewClient(id string, hub *Hub, conn *websocket.Conn) *Client {
 		conn: conn,
 		Send: make(chan []byte, 256),
 	}
+}
+
+func (c *Client) SetOnMessage(fn func([]byte)) {
+	c.onMessage = fn
 }
 
 func (c *Client) ReadPump() {
@@ -53,7 +58,11 @@ func (c *Client) ReadPump() {
 			}
 			break
 		}
-		c.hub.Broadcast <- Message{ClientID: c.ID, Data: data}
+		if c.onMessage != nil {
+			c.onMessage(data)
+		} else {
+			c.hub.Broadcast <- Message{ClientID: c.ID, Data: data}
+		}
 	}
 }
 
