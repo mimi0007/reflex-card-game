@@ -13,6 +13,7 @@ export function useWebSocket(url: string | null) {
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
+    setLastMessage(null);
     setStatus("connecting");
 
     ws.onopen = () => setStatus("open");

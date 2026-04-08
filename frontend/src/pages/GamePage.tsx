@@ -21,6 +21,12 @@ export default function GamePage() {
   const [gameOverData, setGameOverData] = useState<{ winner: string; scores: Scores; reason?: string } | null>(null);
 
   useEffect(() => {
+    setPhase("waiting");
+    setPlayerId(null);
+    setGameOverData(null);
+  }, [roomId]);
+
+  useEffect(() => {
     if (!lastMessage) return;
     if (lastMessage.type === "game_start") {
       setPlayerId(lastMessage.player_id);
