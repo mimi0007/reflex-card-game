@@ -9,7 +9,7 @@ export type ServerMessage =
   | { type: "card_reveal"; card: string; rank: string; suit: string }
   | { type: "round_result"; winner: string; reason: string; scores: Scores }
   | { type: "round_start"; round: number }
-  | { type: "game_over"; winner: string; scores: Scores }
+  | { type: "game_over"; winner: string; scores: Scores; reason?: string }
   | { type: "player_disconnected" };
 
 export type ClientMessage = { type: "click" };

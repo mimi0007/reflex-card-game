@@ -11,7 +11,7 @@ interface Props {
   lastMessage: ServerMessage | null;
   sendMessage: (msg: ClientMessage) => void;
   status: "connecting" | "open" | "closed" | "error";
-  onGameOver: (winner: string, scores: Scores) => void;
+  onGameOver: (winner: string, scores: Scores, reason?: string) => void;
 }
 
 export default function GameScreen({ playerId, lastMessage, sendMessage, status, onGameOver }: Props) {
@@ -41,7 +41,7 @@ export default function GameScreen({ playerId, lastMessage, sendMessage, status,
         setRoundResult(null);
         break;
       case "game_over":
-        onGameOver(lastMessage.winner, lastMessage.scores);
+        onGameOver(lastMessage.winner, lastMessage.scores, lastMessage.reason);
         break;
     }
   }, [lastMessage]);
