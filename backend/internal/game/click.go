@@ -37,6 +37,10 @@ func (g *Game) HandleClick(playerID string) {
 
 func (g *Game) resolveRound(winner, loser, reason string) {
 	g.mu.Lock()
+	if g.state != StatePlaying {
+		g.mu.Unlock()
+		return
+	}
 	g.state = StateRoundEnd
 	g.scores[winner]++
 	scores := map[string]int{"p1": g.scores["p1"], "p2": g.scores["p2"]}

@@ -43,6 +43,9 @@ export default function GameScreen({ playerId, lastMessage, sendMessage, status,
       case "game_over":
         onGameOver(lastMessage.winner, lastMessage.scores, lastMessage.reason);
         break;
+      case "player_disconnected":
+        onGameOver(playerId, scores, "player_disconnected");
+        break;
     }
   }, [lastMessage]);
 
