@@ -1,14 +1,12 @@
 package game
 
 import (
+	"log"
 	"os"
 	"strconv"
 	"time"
 )
 
-// HandleClick is called from a client's ReadPump goroutine when a "click"
-// message arrives. Two goroutines may call this simultaneously (one per player),
-// so ace resolution is protected by clickMu.
 func (g *Game) HandleClick(playerID string) {
 	g.mu.Lock()
 	if g.state != StatePlaying || !g.cardRevealed {
@@ -21,18 +19,14 @@ func (g *Game) HandleClick(playerID string) {
 	opp := opponent(playerID)
 
 	if card.Rank != "A" {
-		// False start — the clicking player loses; opponent wins.
-		// No mutex needed: the state transitions to StateRoundEnd inside
-		// resolveRound, so any subsequent click from the other player is
-		// dropped by the StatePlaying guard above.
 		g.resolveRound(opp, playerID, "false_start")
 		return
 	}
 
-	// Ace click — first caller wins; protect with clickMu.
 	g.clickMu.Lock()
 	if g.roundResolved {
 		g.clickMu.Unlock()
+		log.Printf("player %s clicked ace but round already resolved — discarding", playerID)
 		return
 	}
 	g.roundResolved = true
@@ -66,6 +60,9 @@ func (g *Game) resolveRound(winner, loser, reason string) {
 				"scores": scores,
 			})
 			g.Stop()
+			if g.OnGameOver != nil {
+				g.OnGameOver()
+			}
 		})
 		return
 	}

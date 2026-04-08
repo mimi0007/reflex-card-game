@@ -37,6 +37,14 @@ func (c *Client) SetOnMessage(fn func([]byte)) {
 	c.onMessage = fn
 }
 
+func (c *Client) SafeSend(data []byte) {
+	defer func() { recover() }()
+	select {
+	case c.Send <- data:
+	default:
+	}
+}
+
 func (c *Client) ReadPump() {
 	defer func() {
 		c.hub.Unregister <- c

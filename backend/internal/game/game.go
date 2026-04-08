@@ -38,6 +38,7 @@ type Game struct {
 	roundResolved bool
 	currentCard   Card
 	cardRevealed  bool
+	OnGameOver    func()
 }
 
 func New(players [2]*ws.Client, interval time.Duration) *Game {
@@ -65,6 +66,15 @@ func (g *Game) Stop() {
 	case <-g.done:
 	default:
 		close(g.done)
+	}
+}
+
+func (g *Game) IsRunning() bool {
+	select {
+	case <-g.done:
+		return false
+	default:
+		return true
 	}
 }
 
@@ -105,12 +115,27 @@ func (g *Game) revealNext() bool {
 	if g.cardIdx >= len(g.deck) {
 		g.state = StateGameOver
 		scores := map[string]int{"p1": g.scores["p1"], "p2": g.scores["p2"]}
+		onGameOver := g.OnGameOver
 		g.mu.Unlock()
-		g.broadcast(map[string]any{
+
+		msg := map[string]any{
 			"type":   "game_over",
-			"winner": "",
+			"reason": "deck_exhausted",
 			"scores": scores,
-		})
+		}
+		switch {
+		case scores["p1"] > scores["p2"]:
+			msg["winner"] = "p1"
+		case scores["p2"] > scores["p1"]:
+			msg["winner"] = "p2"
+		default:
+			msg["winner"] = ""
+			msg["draw"] = true
+		}
+		g.broadcast(msg)
+		if onGameOver != nil {
+			onGameOver()
+		}
 		return false
 	}
 	card := g.deck[g.cardIdx]
@@ -132,10 +157,7 @@ func (g *Game) broadcast(v any) {
 	data, _ := json.Marshal(v)
 	for _, p := range g.players {
 		if p != nil {
-			select {
-			case p.Send <- data:
-			default:
-			}
+			p.SafeSend(data)
 		}
 	}
 }
