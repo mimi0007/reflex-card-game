@@ -15,7 +15,13 @@ import (
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin: func(r *http.Request) bool {
+		origin := os.Getenv("FRONTEND_ORIGIN")
+		if origin == "" {
+			return true
+		}
+		return r.Header.Get("Origin") == origin
+	},
 }
 
 func main() {
@@ -31,13 +37,30 @@ func main() {
 
 	rm := room.NewManager(interval)
 
-	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/ws", wsHandler(hub, rm))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/ws", wsHandler(hub, rm))
 
 	log.Printf("Server starting on port %s (card interval: %v)", port, interval)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, corsMiddleware(mux)); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := os.Getenv("FRONTEND_ORIGIN")
+		if origin == "" {
+			origin = "*"
+		}
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func cardInterval() time.Duration {

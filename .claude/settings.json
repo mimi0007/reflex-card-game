@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -Rs '{hookSpecificOutput: {hookEventName: \"SessionStart\", additionalContext: (\"## Loaded: PLAN.md\\n\" + .)}}' \"$(git rev-parse --show-toplevel)/PLAN.md\"",
+            "statusMessage": "Loading project plan..."
+          }
+        ]
+      }
+    ]
+  }
+}
