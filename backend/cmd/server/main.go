@@ -75,7 +75,10 @@ func wsHandler(hub *ws.Hub, rm *room.Manager) http.HandlerFunc {
 		idx, err := ro.Join(client)
 		if err != nil {
 			log.Printf("room %s full, rejecting %s", ro.ID, client.ID)
+			conn.WriteMessage(websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "room full"))
 			conn.Close()
+			hub.Unregister <- client
 			return
 		}
 
@@ -84,7 +87,19 @@ func wsHandler(hub *ws.Hub, rm *room.Manager) http.HandlerFunc {
 
 		log.Printf("client %s joined room %s as %s", client.ID, ro.ID, client.PlayerID)
 
-		go client.ReadPump()
+		client.ReadPump()
+
+		wasRunning := ro.StopGame()
+		if wasRunning {
+			ro.BroadcastExcept(client, map[string]any{
+				"type":      "player_disconnected",
+				"player_id": client.PlayerID,
+				"message":   client.PlayerID + " disconnected",
+			})
+		}
+
+		rm.Remove(ro.ID)
+		log.Printf("client %s disconnected from room %s, room removed", client.ID, ro.ID)
 	}
 }
 
