@@ -1,0 +1,93 @@
+.card {
+  width: 100px;
+  height: 140px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.card--back {
+  background: repeating-linear-gradient(
+    45deg,
+    #1e3a5f,
+    #1e3a5f 4px,
+    #2a4f7e 4px,
+    #2a4f7e 8px
+  );
+  border: 3px solid #1e3a5f;
+}
+
+.card--red {
+  color: #dc2626;
+}
+
+.card--black {
+  color: #1f2937;
+}
+
+.card__corner {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card__corner--bottom {
+  transform: rotate(180deg);
+  align-self: flex-end;
+}
+
+.card__suit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.card--ace {
+  animation: ace-glow 1s ease-in-out infinite alternate;
+}
+
+@keyframes ace-glow {
+  from {
+    box-shadow: 0 0 6px 2px rgba(234, 179, 8, 0.5);
+  }
+  to {
+    box-shadow: 0 0 18px 6px rgba(234, 179, 8, 0.9);
+  }
+}
+
+/* Flip wrapper */
+.flip-card-wrapper {
+  perspective: 600px;
+  display: inline-block;
+}
+
+.flip-card-inner {
+  transition: transform 0.15s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+.flip-card-inner--flipping {
+  transform: rotateY(90deg);
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: 80px;
+    height: 112px;
+  }
+
+  .card__suit {
+    font-size: 1.8rem;
+  }
+}
