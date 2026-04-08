@@ -4,6 +4,7 @@ import type { CardData } from "./Card";
 import FlipCard from "./FlipCard";
 import Scoreboard from "./Scoreboard";
 import ClickArea from "./ClickArea";
+import RoundResult from "./RoundResult";
 
 interface Props {
   playerId: "p1" | "p2";
@@ -18,6 +19,7 @@ export default function GameScreen({ playerId, lastMessage, sendMessage, status,
   const [scores, setScores] = useState<Scores>({ p1: 0, p2: 0 });
   const [round, setRound] = useState(1);
   const [clickEnabled, setClickEnabled] = useState(false);
+  const [roundResult, setRoundResult] = useState<{ winner: string; reason: string; scores: Scores } | null>(null);
 
   useEffect(() => {
     if (!lastMessage) return;
@@ -30,11 +32,13 @@ export default function GameScreen({ playerId, lastMessage, sendMessage, status,
       case "round_result":
         setScores(lastMessage.scores);
         setClickEnabled(false);
+        setRoundResult({ winner: lastMessage.winner, reason: lastMessage.reason, scores: lastMessage.scores });
         break;
       case "round_start":
         setCurrentCard(null);
         setClickEnabled(false);
         setRound(lastMessage.round);
+        setRoundResult(null);
         break;
       case "game_over":
         onGameOver(lastMessage.winner, lastMessage.scores);
@@ -69,6 +73,15 @@ export default function GameScreen({ playerId, lastMessage, sendMessage, status,
       <div style={{ padding: "1rem" }}>
         <ClickArea enabled={clickEnabled} onClick={handleClick} />
       </div>
+
+      {roundResult && (
+        <RoundResult
+          winner={roundResult.winner}
+          reason={roundResult.reason}
+          scores={roundResult.scores}
+          playerId={playerId}
+        />
+      )}
 
       {status !== "open" && (
         <div style={{
