@@ -66,6 +66,11 @@ body {
   margin: 0;
 }
 
+@keyframes pulse {
+  from { opacity: 1; }
+  to   { opacity: 0.75; }
+}
+
 h1,
 h2 {
   font-family: var(--heading);
