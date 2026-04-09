@@ -32,13 +32,16 @@ func sendJSON(client *ws.Client, v any) {
 }
 
 type Room struct {
-	ID         string
-	players    [2]*ws.Client
-	mu         sync.Mutex
-	count      int
-	game       *game.Game
-	interval   time.Duration
-	onGameOver func()
+	ID                 string
+	players            [2]*ws.Client
+	mu                 sync.Mutex
+	count              int
+	game               *game.Game
+	interval           time.Duration
+	onGameOver         func()
+	playAgainRequester int
+	removalTimer       *time.Timer
+	playAgainTimer     *time.Timer
 }
 
 func (r *Room) Join(client *ws.Client) (int, error) {
@@ -65,13 +68,127 @@ func (r *Room) Join(client *ws.Client) (int, error) {
 		r.game = game.New(r.players, r.interval)
 		r.game.OnGameOver = r.onGameOver
 
-		r.players[0].SetOnMessage(func(data []byte) { r.game.HandleMessage("p1", data) })
-		r.players[1].SetOnMessage(func(data []byte) { r.game.HandleMessage("p2", data) })
+		r.players[0].SetOnMessage(func(data []byte) { r.HandleMessage(0, data) })
+		r.players[1].SetOnMessage(func(data []byte) { r.HandleMessage(1, data) })
 
 		r.game.Start()
 	}
 
 	return idx, nil
+}
+
+func (r *Room) HandleMessage(playerIdx int, data []byte) {
+	var msg struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return
+	}
+
+	playerID := "p1"
+	if playerIdx == 1 {
+		playerID = "p2"
+	}
+
+	switch msg.Type {
+	case "play_again":
+		r.handlePlayAgainRequest(playerIdx)
+	case "play_again_accept":
+		r.handlePlayAgainAccept()
+	case "play_again_decline":
+		r.handlePlayAgainDecline()
+	default:
+		r.mu.Lock()
+		g := r.game
+		r.mu.Unlock()
+		if g != nil {
+			g.HandleMessage(playerID, data)
+		}
+	}
+}
+
+func (r *Room) handlePlayAgainRequest(playerIdx int) {
+	r.mu.Lock()
+	r.playAgainRequester = playerIdx
+	other := r.players[1-playerIdx]
+	requesterClient := r.players[playerIdx]
+	r.mu.Unlock()
+
+	if other != nil {
+		sendJSON(other, map[string]string{"type": "play_again_request"})
+	}
+
+	t := time.AfterFunc(30*time.Second, func() {
+		r.mu.Lock()
+		if r.playAgainRequester == -1 {
+			r.mu.Unlock()
+			return
+		}
+		r.playAgainRequester = -1
+		r.mu.Unlock()
+
+		if requesterClient != nil {
+			sendJSON(requesterClient, map[string]string{"type": "play_again_declined"})
+		}
+	})
+
+	r.mu.Lock()
+	r.playAgainTimer = t
+	r.mu.Unlock()
+}
+
+func (r *Room) handlePlayAgainAccept() {
+	r.mu.Lock()
+	requester := r.playAgainRequester
+	timer := r.removalTimer
+	paTimer := r.playAgainTimer
+	players := r.players
+	r.playAgainRequester = -1
+	r.mu.Unlock()
+
+	if paTimer != nil {
+		paTimer.Stop()
+	}
+
+	if requester == -1 {
+		return
+	}
+
+	if timer != nil {
+		timer.Stop()
+	}
+
+	r.mu.Lock()
+	r.game = game.New(players, r.interval)
+	g := r.game
+	r.mu.Unlock()
+
+	g.OnGameOver = r.onGameOver
+	r.players[0].SetOnMessage(func(data []byte) { r.HandleMessage(0, data) })
+	r.players[1].SetOnMessage(func(data []byte) { r.HandleMessage(1, data) })
+
+	sendJSON(r.players[0], map[string]any{"type": "game_start", "player_id": "p1"})
+	sendJSON(r.players[1], map[string]any{"type": "game_start", "player_id": "p2"})
+
+	g.Start()
+}
+
+func (r *Room) handlePlayAgainDecline() {
+	r.mu.Lock()
+	requester := r.playAgainRequester
+	paTimer := r.playAgainTimer
+	r.playAgainRequester = -1
+	r.mu.Unlock()
+
+	if paTimer != nil {
+		paTimer.Stop()
+	}
+
+	if requester == -1 {
+		return
+	}
+
+	sendJSON(r.players[requester], map[string]string{"type": "play_again_declined"})
 }
 
 func (r *Room) StopGame() bool {
@@ -111,11 +228,14 @@ func NewManager(interval time.Duration) *Manager {
 }
 
 func (m *Manager) newRoom(id string) *Room {
-	r := &Room{ID: id, interval: m.interval}
+	r := &Room{ID: id, interval: m.interval, playAgainRequester: -1}
 	r.onGameOver = func() {
-		time.AfterFunc(5*time.Second, func() {
+		t := time.AfterFunc(30*time.Second, func() {
 			m.Remove(id)
 		})
+		r.mu.Lock()
+		r.removalTimer = t
+		r.mu.Unlock()
 	}
 	return r
 }
