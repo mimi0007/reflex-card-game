@@ -10,6 +10,12 @@ export type ServerMessage =
   | { type: "round_result"; winner: string; reason: string; scores: Scores }
   | { type: "round_start"; round: number }
   | { type: "game_over"; winner: string; scores: Scores; reason?: string }
-  | { type: "player_disconnected" };
+  | { type: "player_disconnected" }
+  | { type: "play_again_request" }
+  | { type: "play_again_declined" };
 
-export type ClientMessage = { type: "click" };
+export type ClientMessage =
+  | { type: "click" }
+  | { type: "play_again" }
+  | { type: "play_again_accept" }
+  | { type: "play_again_decline" };

@@ -86,6 +86,13 @@
   color: #374151;
 }
 
+.game-over__waiting {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0 0 0.75rem;
+  text-align: center;
+}
+
 @keyframes game-over-in {
   from {
     opacity: 0;
