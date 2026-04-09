@@ -39,10 +39,10 @@ export default function RoundResult({ winner, reason, scores, playerId }: Props)
         <p className="round-result-subtitle">{subtitle}</p>
         <div className="round-result-scores">
           <span className={p1IsWinner ? "round-result-scores__winner" : "round-result-scores__loser"}>
-            {playerId === "p1" ? "You" : "P1"}: {scores.p1}
+            {playerId === "p1" ? "You" : "Player1"}: {scores.p1}
           </span>
           <span className={!p1IsWinner ? "round-result-scores__winner" : "round-result-scores__loser"}>
-            {playerId === "p2" ? "You" : "P2"}: {scores.p2}
+            {playerId === "p2" ? "You" : "Player2"}: {scores.p2}
           </span>
         </div>
         <p className="round-result-hint">Next round...</p>

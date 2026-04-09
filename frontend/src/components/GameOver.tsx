@@ -28,7 +28,7 @@ export default function GameOver({ winner, scores, reason, playerId, playAgainSt
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (playAgainState === "pending") {
+    if (playAgainState === "pending" || playAgainState === "requested") {
       setCountdown(30);
       intervalRef.current = setInterval(() => {
         setCountdown(prev => {
@@ -60,7 +60,7 @@ export default function GameOver({ winner, scores, reason, playerId, playAgainSt
   const youScore = playerId === "p1" ? scores.p1 : scores.p2;
   const themScore = playerId === "p1" ? scores.p2 : scores.p1;
   const youLabel = "You";
-  const themLabel = playerId === "p1" ? "Player 2" : "Player 1";
+  const themLabel = playerId === "p1" ? "Player2" : "Player1";
 
   return (
     <div className="game-over">
@@ -96,7 +96,7 @@ export default function GameOver({ winner, scores, reason, playerId, playAgainSt
 
         {playAgainState === "requested" && (
           <>
-            <p className="game-over__waiting">Opponent wants a rematch!</p>
+            <p className="game-over__waiting">Opponent wants a rematch! {countdown}s</p>
             <button className="game-over__btn game-over__btn--primary" onClick={onPlayAgainAccept}>
               Accept
             </button>

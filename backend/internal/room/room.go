@@ -125,10 +125,14 @@ func (r *Room) handlePlayAgainRequest(playerIdx int) {
 			return
 		}
 		r.playAgainRequester = -1
+		otherClient := r.players[1-playerIdx]
 		r.mu.Unlock()
 
 		if requesterClient != nil {
 			sendJSON(requesterClient, map[string]string{"type": "play_again_declined"})
+		}
+		if otherClient != nil {
+			sendJSON(otherClient, map[string]string{"type": "play_again_declined"})
 		}
 	})
 

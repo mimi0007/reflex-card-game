@@ -17,11 +17,11 @@ export default function Scoreboard({ scores, round, playerId }: Props) {
       fontWeight: 600,
     }}>
       <span style={{ color: playerId === "p1" ? "#2563eb" : "#6b7280" }}>
-        {playerId === "p1" ? "You" : "P1"}: {scores.p1}
+        {playerId === "p1" ? "You" : "Player1"}: {scores.p1}
       </span>
       <span style={{ color: "#6b7280", fontSize: "0.85rem" }}>Round {round}</span>
       <span style={{ color: playerId === "p2" ? "#2563eb" : "#6b7280" }}>
-        {playerId === "p2" ? "You" : "P2"}: {scores.p2}
+        {playerId === "p2" ? "You" : "Player2"}: {scores.p2}
       </span>
     </div>
   );
