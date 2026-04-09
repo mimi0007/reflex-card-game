@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Scores } from "../types/messages";
-import { generateRoomCode } from "../utils/roomCode";
+import type { PlayAgainState } from "../pages/GamePage";
 import "../styles/game-over.css";
 
 interface Props {
@@ -9,6 +9,10 @@ interface Props {
   scores: Scores;
   reason?: string;
   playerId: "p1" | "p2";
+  playAgainState: PlayAgainState;
+  onPlayAgain: () => void;
+  onPlayAgainAccept: () => void;
+  onPlayAgainDecline: () => void;
 }
 
 function getSubtitle(reason: string | undefined, isDraw: boolean): string {
@@ -18,9 +22,33 @@ function getSubtitle(reason: string | undefined, isDraw: boolean): string {
   return "First to 3 rounds wins.";
 }
 
-export default function GameOver({ winner, scores, reason, playerId }: Props) {
+export default function GameOver({ winner, scores, reason, playerId, playAgainState, onPlayAgain, onPlayAgainAccept, onPlayAgainDecline }: Props) {
   const navigate = useNavigate();
-  const [copied, setCopied] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (playAgainState === "pending") {
+      setCountdown(30);
+      intervalRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(intervalRef.current!);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      setCountdown(30);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [playAgainState]);
 
   const isDraw = scores.p1 === scores.p2;
   const isWinner = !isDraw && winner === playerId;
@@ -29,23 +57,10 @@ export default function GameOver({ winner, scores, reason, playerId }: Props) {
   const title = isDraw ? "It's a draw!" : isWinner ? "You win!" : "You lose!";
   const subtitle = getSubtitle(reason, isDraw);
 
-  function handlePlayAgain() {
-    navigate(`/game/${generateRoomCode()}`);
-  }
-
-  function handleShare() {
-    const code = generateRoomCode();
-    const url = `${window.location.origin}/game/${code}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
   const youScore = playerId === "p1" ? scores.p1 : scores.p2;
   const themScore = playerId === "p1" ? scores.p2 : scores.p1;
   const youLabel = "You";
-  const themLabel = playerId === "p1" ? "Player2" : "Player1";
+  const themLabel = playerId === "p1" ? "Player 2" : "Player 1";
 
   return (
     <div className="game-over">
@@ -64,12 +79,32 @@ export default function GameOver({ winner, scores, reason, playerId }: Props) {
       </div>
 
       <div className="game-over__actions">
-        <button className="game-over__btn game-over__btn--primary" onClick={handlePlayAgain}>
-          Play Again
-        </button>
-        <button className="game-over__btn game-over__btn--secondary" onClick={handleShare}>
-          {copied ? "Link copied!" : "Share New Game"}
-        </button>
+        {playAgainState === "idle" && (
+          <>
+            <button className="game-over__btn game-over__btn--primary" onClick={onPlayAgain}>
+              Play Again
+            </button>
+            <button className="game-over__btn game-over__btn--secondary" onClick={() => navigate("/")}>
+              Home
+            </button>
+          </>
+        )}
+
+        {playAgainState === "pending" && (
+          <p className="game-over__waiting">Waiting for opponent... {countdown}s</p>
+        )}
+
+        {playAgainState === "requested" && (
+          <>
+            <p className="game-over__waiting">Opponent wants a rematch!</p>
+            <button className="game-over__btn game-over__btn--primary" onClick={onPlayAgainAccept}>
+              Accept
+            </button>
+            <button className="game-over__btn game-over__btn--secondary" onClick={onPlayAgainDecline}>
+              Decline
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
