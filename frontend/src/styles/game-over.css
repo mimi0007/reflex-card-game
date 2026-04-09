@@ -21,11 +21,11 @@
 }
 
 .game-over__title--win {
-  color: #16a34a;
+  color: #00b300 !important;
 }
 
 .game-over__title--lose {
-  color: #dc2626;
+  color: #e60000 !important;
 }
 
 .game-over__subtitle {
@@ -42,12 +42,16 @@
   margin-bottom: 2.5rem;
 }
 
+.game-over__scores__label {
+  color: #374151;
+}
+
 .game-over__scores__you {
-  color: #16a34a;
+  color: #00b300;
 }
 
 .game-over__scores__them {
-  color: #6b7280;
+  color: #e60000;
 }
 
 .game-over__actions {

@@ -45,7 +45,7 @@ export default function GameOver({ winner, scores, reason, playerId }: Props) {
   const youScore = playerId === "p1" ? scores.p1 : scores.p2;
   const themScore = playerId === "p1" ? scores.p2 : scores.p1;
   const youLabel = "You";
-  const themLabel = playerId === "p1" ? "P2" : "P1";
+  const themLabel = playerId === "p1" ? "Player2" : "Player1";
 
   return (
     <div className="game-over">
@@ -54,12 +54,12 @@ export default function GameOver({ winner, scores, reason, playerId }: Props) {
       <p className="game-over__subtitle">{subtitle}</p>
 
       <div className="game-over__scores">
-        <span className={isWinner || isDraw ? "game-over__scores__you" : "game-over__scores__them"}>
-          {youLabel}: {youScore}
+        <span className="game-over__scores__label">
+          {youLabel}: <span className={isWinner || isDraw ? "game-over__scores__you" : "game-over__scores__them"}>{youScore}</span>
         </span>
         <span style={{ color: "#9ca3af", fontWeight: 400 }}>VS</span>
-        <span className={!isWinner && !isDraw ? "game-over__scores__you" : "game-over__scores__them"}>
-          {themLabel}: {themScore}
+        <span className="game-over__scores__label">
+          {themLabel}: <span className={!isWinner && !isDraw ? "game-over__scores__you" : "game-over__scores__them"}>{themScore}</span>
         </span>
       </div>
 
