@@ -315,7 +315,7 @@ Open two browser tabs to `http://localhost:5173` to test both players locally.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `8080` | HTTP server port |
-| `FRONTEND_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
+| `FRONTEND_ORIGIN` | `http://localhost:5173` (dev) / `https://reflex-card-game.vercel.app` (prod) | Allowed CORS origin |
 | `CARD_INTERVAL_MS` | `3000` | Milliseconds between card reveals |
 | `ROUNDS_TO_WIN` | `3` | Rounds needed to win the game |
 
@@ -323,4 +323,4 @@ Open two browser tabs to `http://localhost:5173` to test both players locally.
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_WS_URL` | WebSocket URL of the backend (e.g. `wss://your-app.onrender.com`) |
+| `VITE_WS_URL` | WebSocket URL of the backend (e.g. `wss://reflex-card-game-backend.fly.dev`) |
