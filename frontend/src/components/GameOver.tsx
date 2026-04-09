@@ -50,7 +50,7 @@ export default function GameOver({ winner, scores, reason, playerId }: Props) {
   return (
     <div className="game-over">
       <div className="game-over__emoji">{emoji}</div>
-      <h2 className="game-over__title">{title}</h2>
+      <h2 className={`game-over__title${isWinner ? " game-over__title--win" : !isDraw ? " game-over__title--lose" : ""}`}>{title}</h2>
       <p className="game-over__subtitle">{subtitle}</p>
 
       <div className="game-over__scores">

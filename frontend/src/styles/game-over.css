@@ -20,6 +20,14 @@
   color: #111827;
 }
 
+.game-over__title--win {
+  color: #16a34a;
+}
+
+.game-over__title--lose {
+  color: #dc2626;
+}
+
 .game-over__subtitle {
   font-size: 0.95rem;
   color: #6b7280;
